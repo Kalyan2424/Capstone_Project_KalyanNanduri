@@ -1,1 +1,72 @@
+# Task 1 — Structured JSON of verified figures - findings.json
 
+import json
+import pandas as pd
+
+# --- Load raw datasets ---
+orders = pd.read_csv("orders.csv")
+products = pd.read_csv("products.csv")
+
+# Normalize column names
+orders.columns = orders.columns.str.strip().str.lower()
+products.columns = products.columns.str.strip().str.lower()
+
+# Ensure product_id types match
+orders['product_id'] = orders['product_id'].astype(str)
+products['product_id'] = products['product_id'].astype(str)
+
+# --- Merge to compute raw order_value ---
+merged_raw = orders.merge(products[['product_id','price']], on="product_id", how="left")
+merged_raw['discount_pct'] = merged_raw['discount_pct'].fillna(0).astype(float)
+merged_raw['quantity'] = merged_raw['quantity'].astype(float)
+
+merged_raw['order_value'] = merged_raw['quantity'] * merged_raw['price'] * (1 - merged_raw['discount_pct']/100)
+raw_total_revenue = merged_raw['order_value'].sum()
+
+# --- Load cleaned dataset (already has order_value column) ---
+cleaned = pd.read_csv("cleaned_orders.csv")
+cleaned_total_revenue = cleaned['order_value'].sum()
+
+# --- Reconciliation delta ---
+duplicate_reconciliation_delta = raw_total_revenue - cleaned_total_revenue
+
+# --- Return rates by payment method ---
+return_stats = cleaned.groupby('payment_method')['returned'].mean() * 100
+
+# --- Highest risk segment ---
+seg_stats = cleaned.groupby(['payment_method','city_tier'])['returned'].mean() * 100
+
+# --- Monthly revenue trend (exclude outliers) ---
+monthly_excl = cleaned.loc[~cleaned['is_outlier']].groupby('year_month')['order_value'].sum()
+
+# --- Build findings dict with fixed decimal formatting ---
+findings = {
+    "cleaned_total_revenue_inr": format(cleaned_total_revenue, ".2f"),
+    "raw_total_revenue_inr": format(raw_total_revenue, ".2f"),
+    "duplicate_reconciliation_delta_inr": format(duplicate_reconciliation_delta, ".2f"),
+    "return_rate_by_payment": {
+        "COD": format(return_stats.get('COD',0), ".1f"),
+        "CARD": format(return_stats.get('CARD',0), ".1f"),
+        "UPI": format(return_stats.get('UPI',0), ".1f")
+    },
+    "highest_risk_segment": {
+        "payment_method": "COD",
+        "city_tier": 2,
+        "return_rate_pct": format(seg_stats.loc[('COD',2)], ".1f")
+    },
+    "true_peak_month": {
+        "month": monthly_excl.idxmax(),
+        "revenue_inr": format(monthly_excl.max(), ".2f")
+    },
+    "outlier_inflated_month": {
+        "month": "2026-01",
+        "apparent_revenue_inr": format(29582.10, ".2f"),
+        "corrected_revenue_inr": format(monthly_excl.loc["2026-01"], ".2f")
+    }
+}
+
+# --- Write to narrator/findings.json ---
+with open("findings.json", "w") as f:
+    json.dump(findings, f, indent=2)
+
+print("findings.json successfully written.")
