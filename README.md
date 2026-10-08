@@ -15,15 +15,15 @@ Every number reported in this project is computed directly from the raw CSVs and
 ### 1. SQL Relational Layer (Part 1)
 ```
 Create tables:
-sqlite3 mamaearth.db < sql/schema.sql
+MySQL DB15 < sql/schema.sql
 ```
 ```
 Load seed data:
-sqlite3 mamaearth.db < sql/seed_data.sql
+MySQL DB15 < sql/seed_data.sql
 ```
 ```
 Run reports:
-sqlite3 mamaearth.db < sql/reports.sql
+MySQL DB15 < sql/reports.sql
 ```
 
 Verify counts: Customers = 45, Products = 16, Orders = 180.
@@ -44,11 +44,12 @@ Generate visualizations:
 python analysis/visualize.py
 ```
 
-Charts are saved into the visualizations/ folder.
+Charts are saved into the visualizations folder.
 
 
 ### 3. GenAI Narrative Layer (Part 3)
 ```
+Generate_scr_narrative, Parameter locking and error handling and Offline fallback path
 python narrator/generate_narrative.py
 ```
 ```
