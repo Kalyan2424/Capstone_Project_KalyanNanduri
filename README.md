@@ -14,13 +14,13 @@ Every number reported in this project is computed directly from the raw CSVs and
 
 ### 1. SQL Relational Layer (Part 1)
 
- ```Create tables:
+Create tables:
 sqlite3 mamaearth.db < sql/schema.sql
 
-```Load seed data:
+Load seed data:
 sqlite3 mamaearth.db < sql/seed_data.sql
 
-```Run reports:
+Run reports:
 sqlite3 mamaearth.db < sql/reports.sql
 
 Verify counts: Customers = 45, Products = 16, Orders = 180.
@@ -29,16 +29,13 @@ Reports produce totals, return rates, rankings, and category revenues.
 
 ### 2. Python Analysis & EDA (Part 2)
 
-
-    Run cleaning and EDA:
-```
+Run cleaning and EDA:
 python analysis/clean_and_eda.py
 
 This prints intermediate results (shapes, duplicates, imputations, reconciliation note, outlier flags, segmentation, correlations, monthly totals).
 It also writes narrator/findings.json at the end.
 
-    Generate visualizations:
-```
+Generate visualizations:
 python analysis/visualize.py
 
 Charts are saved into the visualizations/ folder.
@@ -47,11 +44,10 @@ Charts are saved into the visualizations/ folder.
 ### 3. GenAI Narrative Layer (Part 3)
 
 
-    python narrator/generate_narrative.py
-```
-    Option A (online): Set Gemini API key:
-```
-    export GEMINI_API_KEY="your_free_key"
+python narrator/generate_narrative.py
+
+Option A (online): Set Gemini API key:
+export GEMINI_API_KEY="your_free_key"
 
 Produces narrative via Gemini and saves sample_output.txt.
 
