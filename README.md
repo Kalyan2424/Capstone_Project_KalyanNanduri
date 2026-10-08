@@ -13,10 +13,10 @@ Every number reported in this project is computed directly from the raw CSVs and
 ## 📂 Step‑by‑Step Pipeline
 
 ### 1. SQL Relational Layer (Part 1)
-
+```
 Create tables:
 sqlite3 mamaearth.db < sql/schema.sql
-
+```
 Load seed data:
 sqlite3 mamaearth.db < sql/seed_data.sql
 
