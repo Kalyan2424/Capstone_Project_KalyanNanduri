@@ -1,4 +1,3 @@
-```markdown
 # Mamaearth Returns & Growth Intelligence Pipeline
 
 This repository implements a complete end‑to‑end analytics pipeline for Mamaearth’s order and returns data. It connects three layers seamlessly:
@@ -14,16 +13,16 @@ Every number reported in this project is computed directly from the raw CSVs and
 ## 📂 Step‑by‑Step Pipeline
 
 ### 1. SQL Relational Layer (Part 1)
-```markdown
-Create tables:
+
+    Create tables:
 ```bash
 sqlite3 mamaearth.db < sql/schema.sql
-```markdown
-Load seed data:
+
+    Load seed data:
 ```bash
 sqlite3 mamaearth.db < sql/seed_data.sql
-```markdown
-Run reports:
+
+    Run reports:
 ```bash
 sqlite3 mamaearth.db < sql/reports.sql
 
@@ -32,15 +31,16 @@ Reports produce totals, return rates, rankings, and category revenues.
 
 
 ### 2. Python Analysis & EDA (Part 2)
-```markdown
+
+
+    Run cleaning and EDA:
 ```bash
-Run cleaning and EDA:
 python analysis/clean_and_eda.py
 
 This prints intermediate results (shapes, duplicates, imputations, reconciliation note, outlier flags, segmentation, correlations, monthly totals).
 It also writes narrator/findings.json at the end.
-```markdown
-Generate visualizations:
+
+    Generate visualizations:
 ```bash
 python analysis/visualize.py
 
@@ -48,13 +48,13 @@ Charts are saved into the visualizations/ folder.
 
 
 ### 3. GenAI Narrative Layer (Part 3)
-```markdown
+
+
+    python narrator/generate_narrative.py
 ```bash
-python narrator/generate_narrative.py
-```markdown
-Option A (online): Set Gemini API key:
+    Option A (online): Set Gemini API key:
 ```bash
-export GEMINI_API_KEY="your_free_key"
+    export GEMINI_API_KEY="your_free_key"
 
 Produces narrative via Gemini and saves sample_output.txt.
 
