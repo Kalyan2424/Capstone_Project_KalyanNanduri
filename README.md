@@ -14,16 +14,13 @@ Every number reported in this project is computed directly from the raw CSVs and
 
 ### 1. SQL Relational Layer (Part 1)
 
-    Create tables:
-```
+ ```Create tables:
 sqlite3 mamaearth.db < sql/schema.sql
 
-    Load seed data:
-```
+```Load seed data:
 sqlite3 mamaearth.db < sql/seed_data.sql
 
-    Run reports:
-```
+```Run reports:
 sqlite3 mamaearth.db < sql/reports.sql
 
 Verify counts: Customers = 45, Products = 16, Orders = 180.
