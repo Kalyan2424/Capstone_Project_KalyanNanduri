@@ -37,7 +37,6 @@ python analysis/clean_and_eda.py
 ```
 
 This prints intermediate results (shapes, duplicates, imputations, reconciliation note, outlier flags, segmentation, correlations, monthly totals).
-It also writes narrator/findings.json at the end.
 
 ```
 Generate visualizations:
@@ -56,12 +55,11 @@ python narrator/generate_narrative.py
 Option A (online): Set Gemini API key:
 export GEMINI_API_KEY="your_free_key"
 ```
-
 Produces narrative via Gemini and saves sample_output.txt.
-
+```
 Option B (offline fallback): Run with no key.
 Generates deterministic SCR narrative locally.
-
+```
 Numeric accuracy checker validates five required figures in both offline and sample outputs.
 
 
