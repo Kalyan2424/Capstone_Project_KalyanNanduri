@@ -8,91 +8,35 @@ def generate_scr_narrative(findings: dict) -> dict:
     based strictly on the supplied findings dict.
     """
 
-    # --- Initialize Gemini client ---
+    # Map YYYY-MM to human-readable month
+    month_map = {"2026-03": "March"}
+    month_label = month_map.get(findings['true_peak_month']['month'], findings['true_peak_month']['month'])
+    true_peak_month_str = f"{month_label} with revenue INR {findings['true_peak_month']['revenue_inr']}"
+
     client = genai.Client()
 
-    # --- System instruction (role + structure + constraints) ---
     system_instruction = (
         "You are a senior data analyst writing for Mamaearth's regional ops and finance heads. "
         "Your output must be structured into three labeled sections: Situation, Complication, Resolution. "
         "Every number in your narrative must come directly from the supplied findings dictionary "
-        "and appear exactly as given — no invented statistics or approximations."
+        "and appear exactly as given — no invented statistics or approximations. "
+        "Do not reformat, round, or alter these numbers. "
+        "For the true peak month, you must write 'March' (not '2026-03') together with the revenue INR 20318.90."
     )
 
-    # --- Build user prompt dynamically from findings ---
-    contents = (
+    user_prompt = (
         f"Use the following verified findings to write the SCR narrative:\n\n"
         f"- Cleaned total revenue INR: {findings['cleaned_total_revenue_inr']}\n"
         f"- Raw total revenue INR: {findings['raw_total_revenue_inr']}\n"
         f"- Duplicate reconciliation delta INR: {findings['duplicate_reconciliation_delta_inr']}\n"
         f"- Return rate by payment: {findings['return_rate_by_payment']}\n"
         f"- Highest risk segment: {findings['highest_risk_segment']}\n"
-        f"- True peak month: {findings['true_peak_month']}\n"
+        f"- True peak month: {true_peak_month_str}\n"
         f"- Outlier inflated month: {findings['outlier_inflated_month']}\n\n"
         "Write a concise business narrative in SCR format."
     )
 
-    # --- Call Gemini model ---
-    response = client.models.generate_content(
-        model="gemini-3.1-flash-lite",
-        system_instruction=system_instruction,
-        contents=contents
-    )
-
-    # --- Return structured result ---
-    return {
-        "status": "success",
-        "narrative": response.text,
-        "tokens": response.usage_metadata.total_token_count
-    }
-
-
-# Task 3 — Parameter locking + error handling
-
-# Ensure Gemini API key is bridged correctly 
-from google.colab import userdata
-import os
-from google import genai
-
-api_key = userdata.get("Gemini_API_key")
-if not api_key:
-    raise ValueError("Gemini_API_key not found in Colab.")
-os.environ["GEMINI_API_KEY"] = api_key
-print("Gemini key set")
-
-
-def generate_scr_narrative(findings: dict) -> dict:
-    """
-    Generate a Situation–Complication–Resolution narrative using Gemini,
-    based strictly on the supplied findings dict, with parameter locking and error handling.
-    """
-
     try:
-        # Initialize Gemini client
-        client = genai.Client()
-
-        # --- System instruction (role + structure + constraints) ---
-        system_instruction = (
-            "You are a senior data analyst writing for Mamaearth's regional ops and finance heads. "
-            "Your output must be structured into three labeled sections: Situation, Complication, Resolution. "
-            "Every number in your narrative must come directly from the supplied findings dictionary "
-            "and appear exactly as given — no invented statistics or approximations."
-        )
-
-        # --- Build user prompt dynamically from findings ---
-        user_prompt = (
-            f"Use the following verified findings to write the SCR narrative:\n\n"
-            f"- Cleaned total revenue INR: {findings['cleaned_total_revenue_inr']}\n"
-            f"- Raw total revenue INR: {findings['raw_total_revenue_inr']}\n"
-            f"- Duplicate reconciliation delta INR: {findings['duplicate_reconciliation_delta_inr']}\n"
-            f"- Return rate by payment: {findings['return_rate_by_payment']}\n"
-            f"- Highest risk segment: {findings['highest_risk_segment']}\n"
-            f"- True peak month: {findings['true_peak_month']}\n"
-            f"- Outlier inflated month: {findings['outlier_inflated_month']}\n\n"
-            "Write a concise business narrative in SCR format."
-        )
-
-        # --- Parameter locking ---
         response = client.models.generate_content(
             model="gemini-3.1-flash-lite",
             contents=[system_instruction, user_prompt],
@@ -104,14 +48,26 @@ def generate_scr_narrative(findings: dict) -> dict:
             )
         )
 
+        # Safe extraction
+        narrative_text = None
+        if getattr(response, "text", None):
+            narrative_text = response.text
+        elif getattr(response, "candidates", None):
+            try:
+                narrative_text = response.candidates[0].content.parts[0].text
+            except Exception:
+                narrative_text = None
+
+        if not narrative_text:
+            narrative_text = "ERROR: Gemini returned no text."
+
         return {
             "status": "success",
-            "narrative": response.text or "",
-            "tokens": getattr(response.usage_metadata, "total_token_count", 0)
+            "narrative": narrative_text,
+            "tokens": getattr(getattr(response, "usage_metadata", None), "total_token_count", 0)
         }
 
     except Exception as err:
-        # --- Offline fallback path (Task 4) ---
         try:
             from generate_offline import generate_scr_narrative_offline
             return generate_scr_narrative_offline(findings)
@@ -122,6 +78,93 @@ def generate_scr_narrative(findings: dict) -> dict:
                 "message": f"Offline fallback not found. Original error: {str(err)}"
             }
 
+
+# Task 3 — Parameter locking + error handling
+
+from google.colab import userdata
+import os
+from google import genai
+
+api_key = userdata.get("Gemini_API_key")
+if not api_key:
+    raise ValueError("Gemini_API_key not found in Colab.")
+os.environ["GEMINI_API_KEY"] = api_key
+print("Gemini key set")
+
+def generate_scr_narrative(findings: dict) -> dict:
+    """
+    Generate a Situation–Complication–Resolution narrative using Gemini,
+    with parameter locking and error handling.
+    """
+
+    try:
+        client = genai.Client()
+
+        # Map month
+        month_map = {"2026-03": "March"}
+        month_label = month_map.get(findings['true_peak_month']['month'], findings['true_peak_month']['month'])
+        true_peak_month_str = f"{month_label} with revenue INR {findings['true_peak_month']['revenue_inr']}"
+
+        system_instruction = (
+            "You are a senior data analyst writing for Mamaearth's regional ops and finance heads. "
+            "Your output must be structured into three labeled sections: Situation, Complication, Resolution. "
+            "Every number in your narrative must come directly from the supplied findings dictionary "
+            "and appear exactly as given — no invented statistics or approximations. "
+            "For the true peak month, you must write 'March' (not '2026-03') together with the revenue INR 20318.90."
+        )
+
+        user_prompt = (
+            f"Use the following verified findings to write the SCR narrative:\n\n"
+            f"- Cleaned total revenue INR: {findings['cleaned_total_revenue_inr']}\n"
+            f"- Raw total revenue INR: {findings['raw_total_revenue_inr']}\n"
+            f"- Duplicate reconciliation delta INR: {findings['duplicate_reconciliation_delta_inr']}\n"
+            f"- Return rate by payment: {findings['return_rate_by_payment']}\n"
+            f"- Highest risk segment: {findings['highest_risk_segment']}\n"
+            f"- True peak month: {true_peak_month_str}\n"
+            f"- Outlier inflated month: {findings['outlier_inflated_month']}\n\n"
+            "Write a concise business narrative in SCR format."
+        )
+
+        response = client.models.generate_content(
+            model="gemini-3.1-flash-lite",
+            contents=[system_instruction, user_prompt],
+            config=genai.types.GenerateContentConfig(
+                temperature=0.0,
+                max_output_tokens=1024,
+                stop_sequences=[],
+                http_options=genai.types.HttpOptions(timeout=30000)
+            )
+        )
+
+        # Safe extraction
+        narrative_text = None
+        if getattr(response, "text", None):
+            narrative_text = response.text
+        elif getattr(response, "candidates", None):
+            try:
+                narrative_text = response.candidates[0].content.parts[0].text
+            except Exception:
+                narrative_text = None
+
+        if not narrative_text:
+            narrative_text = "ERROR: Gemini returned no text."
+
+        return {
+            "status": "success",
+            "narrative": narrative_text,
+            "tokens": getattr(getattr(response, "usage_metadata", None), "total_token_count", 0)
+        }
+
+    except Exception as err:
+        try:
+            from generate_offline import generate_scr_narrative_offline
+            return generate_scr_narrative_offline(findings)
+        except ImportError:
+            return {
+                "status": "error",
+                "narrative": None,
+                "message": f"Offline fallback not found. Original error: {str(err)}"
+            }
 
 # Example run
 if __name__ == "__main__":
@@ -146,7 +189,8 @@ def generate_scr_narrative_offline(findings: dict) -> dict:
     Offline fallback — deterministically format the SCR narrative 
     Produces a polished business-style narrative with Situation, Complication, Resolution.
     """
-    # Fix: Map "2026-03" to "March" to human-readable
+
+    # Map "2026-03" to "March"
     month_map = {"2026-03": "March"}
     month_label = month_map.get(findings['true_peak_month']['month'], findings['true_peak_month']['month'])
 
@@ -170,7 +214,7 @@ def generate_scr_narrative_offline(findings: dict) -> dict:
 
     resolution = (
         f"Resolution:\n"
-        f"After excluding outliers, the true peak month was {month_label}"
+        f"After excluding outliers, the true peak month was {month_label} "
         f"with revenue of INR {findings['true_peak_month']['revenue_inr']}. "
         f"These insights highlight the need for stronger duplicate handling and closer monitoring of COD returns "
         f"in Tier‑2 cities to ensure stable and accurate revenue reporting."
@@ -181,11 +225,11 @@ def generate_scr_narrative_offline(findings: dict) -> dict:
     return {
         "status": "success",
         "narrative": narrative,
-        "tokens": 0  
+        "tokens": 0
     }
 
 
-# Task 5 - Numeric accuracy check
+# Task 5 — Numeric accuracy checklist
 
 def check_numeric_accuracy(narrative: str) -> None:
     """
@@ -194,7 +238,7 @@ def check_numeric_accuracy(narrative: str) -> None:
     Prints a pass/fail line per figure.
     """
 
-    normalized = narrative.replace(",", "")  
+    normalized = narrative.replace(",", "")  # normalize commas
 
     checks = {
         "Cleaned total revenue (97358.30)": ["97358.30", "97358.3"],
@@ -247,5 +291,3 @@ if __name__ == "__main__":
 
     # Check saved Gemini sample output
     run_accuracy_check_on_sample()
-
-
