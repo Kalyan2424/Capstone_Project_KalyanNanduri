@@ -51,6 +51,7 @@ Charts are saved into the visualizations folder.
 Generate_scr_narrative, Parameter locking and error handling and Offline fallback path
 python narrator/generate_narrative.py
 ```
+Creates structured JSON file capturing the verified figures exactly and generate Situation, Complication, Resolution narrative.
 ```
 Option A (online): Set Gemini API key:
 export GEMINI_API_KEY="your_free_key"
